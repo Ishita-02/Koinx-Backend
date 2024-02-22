@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.companiesHoldingCrypto = exports.cryptoPrice = exports.updateCryptoData = void 0;
 const models_1 = __importDefault(require("../models"));
 const axios_1 = __importDefault(require("axios"));
+const date_fns_1 = require("date-fns");
 const typebox_1 = require("@sinclair/typebox");
 function updateCryptoData(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -24,6 +25,7 @@ function updateCryptoData(req, res) {
             yield models_1.default.deleteMany({});
             yield models_1.default.insertMany(cryptoList);
             console.log('Crypto data updated successfully.');
+            return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList });
         }
         catch (error) {
             console.error('Error updating crypto data:', error);
@@ -36,9 +38,13 @@ setInterval(updateCryptoData, 3600000);
 function cryptoPrice(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const { fromCurrency, toCurrency, date } = req.body;
+            const { fromCurrency, toCurrency, date } = req.query;
             if (!fromCurrency || !toCurrency || !date) {
                 return res.status(400).json({ error: 'Missing required parameters' });
+            }
+            const parsedDate = (0, date_fns_1.parse)(date, 'dd-MM-yyyy', new Date());
+            if (!(0, date_fns_1.isValid)(parsedDate) || date.indexOf('-') === -1) {
+                return res.status(400).json({ error: 'Please provide the date in dd-mm-yyyy format' });
             }
             const fromCurrencyPriceResponse = yield axios_1.default.get(`https://api.coingecko.com/api/v3/coins/${fromCurrency}/history?date=${date}`);
             const fromCurrencyPrice = fromCurrencyPriceResponse.data.market_data.current_price.usd;
@@ -58,14 +64,16 @@ function cryptoPrice(req, res) {
 }
 exports.cryptoPrice = cryptoPrice;
 const cryptoPriceSchema = typebox_1.Type.Object({
-    fromCurrency: typebox_1.Type.String(),
-    toCurrency: typebox_1.Type.String(),
-    date: typebox_1.Type.Date()
+    querystring: typebox_1.Type.Object({
+        fromCurrency: typebox_1.Type.String(),
+        toCurrency: typebox_1.Type.String(),
+        date: typebox_1.Type.Date()
+    })
 });
 function companiesHoldingCrypto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const { currency } = req.body;
+            const { currency } = req.query;
             if (!currency) {
                 return res.status(400).json({ error: 'Invalid or missing currency parameter. Possible values are "bitcoin" or "ethereum".' });
             }
@@ -81,6 +89,8 @@ function companiesHoldingCrypto(req, res) {
 }
 exports.companiesHoldingCrypto = companiesHoldingCrypto;
 const companiesSchema = typebox_1.Type.Object({
-    currency: typebox_1.Type.String()
+    querystring: typebox_1.Type.Object({
+        currency: typebox_1.Type.String()
+    })
 });
 exports.default = { updateCryptoData, cryptoPrice, companiesHoldingCrypto };

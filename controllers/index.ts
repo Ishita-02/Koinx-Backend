@@ -1,5 +1,6 @@
 import Crypto from "../models";
 import axios from "axios";
+import { parse, isValid } from 'date-fns';
 import {Type as T} from '@sinclair/typebox'
 
 export async function updateCryptoData(req:any, res: any) {
@@ -9,6 +10,7 @@ export async function updateCryptoData(req:any, res: any) {
       await Crypto.deleteMany({});
       await Crypto.insertMany(cryptoList);
       console.log('Crypto data updated successfully.');
+      return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList });
     } catch (error: any) {
       console.error('Error updating crypto data:', error);
     }
@@ -18,10 +20,15 @@ export async function updateCryptoData(req:any, res: any) {
 
 export async function cryptoPrice( req: typeof cryptoPriceSchema, res: any){
   try {
-    const { fromCurrency, toCurrency, date } = req.body;
+    const { fromCurrency, toCurrency, date } = req.query;
 
     if (!fromCurrency || !toCurrency || !date) {
       return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    const parsedDate = parse(date, 'dd-MM-yyyy', new Date());
+    if (!isValid(parsedDate) || date.indexOf('-') === -1) {
+      return res.status(400).json({ error: 'Please provide the date in dd-mm-yyyy format' });
     }
 
     const fromCurrencyPriceResponse = await axios.get(`https://api.coingecko.com/api/v3/coins/${fromCurrency}/history?date=${date}`);
@@ -43,14 +50,16 @@ export async function cryptoPrice( req: typeof cryptoPriceSchema, res: any){
 } 
 
 const cryptoPriceSchema = T.Object({
-  fromCurrency: T.String(),
-  toCurrency: T.String(),
-  date: T.Date()
+  querystring: T.Object({
+    fromCurrency: T.String(),
+    toCurrency: T.String(),
+    date: T.Date()
+  })
 });
 
 export async function companiesHoldingCrypto(req: typeof companiesSchema, res: any) {
   try {
-    const { currency } = req.body;
+    const { currency } = req.query;
 
     if (!currency) {
       return res.status(400).json({ error: 'Invalid or missing currency parameter. Possible values are "bitcoin" or "ethereum".' });
@@ -68,7 +77,9 @@ export async function companiesHoldingCrypto(req: typeof companiesSchema, res: a
 }
 
 const companiesSchema = T.Object({
-  currency: T.String()
+  querystring: T.Object({
+    currency: T.String()
+  })
 });
 
 
