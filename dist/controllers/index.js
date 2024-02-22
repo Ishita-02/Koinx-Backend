@@ -29,13 +29,17 @@ function updateCryptoData(req, res) {
             const cryptoList = response.data;
             const lastIndex = cryptoList.findIndex((crypto) => crypto.id === startId);
             const newCryptoList = lastIndex === -1 ? cryptoList : cryptoList.slice(lastIndex + 1);
+            let paginatedData = [];
             if (newCryptoList.length === 0) {
                 console.log('No new entries to update.');
-                return res.json({ success: true, message: 'No new entries to update' });
+                paginatedData = yield getPaginatedData(req);
             }
-            yield models_1.default.insertMany(newCryptoList);
-            console.log('Crypto data updated successfully.');
-            return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList: newCryptoList });
+            else {
+                yield models_1.default.insertMany(newCryptoList);
+                console.log('Crypto data updated successfully.');
+                paginatedData = paginateData(newCryptoList, req);
+            }
+            return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList: paginatedData });
         }
         catch (error) {
             console.error('Error updating crypto data:', error);
@@ -44,6 +48,19 @@ function updateCryptoData(req, res) {
 }
 exports.updateCryptoData = updateCryptoData;
 ;
+function getPaginatedData(req) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const allData = yield models_1.default.find();
+        return paginateData(allData, req);
+    });
+}
+function paginateData(data, req) {
+    const page = parseInt(req.query.page) || 1;
+    const perPage = 500;
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    return data.slice(startIndex, endIndex);
+}
 setInterval(updateCryptoData, 3600000);
 function cryptoPrice(req, res) {
     return __awaiter(this, void 0, void 0, function* () {

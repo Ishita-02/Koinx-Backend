@@ -19,19 +19,35 @@ export async function updateCryptoData(req:any, res: any) {
 
     const newCryptoList = lastIndex === -1 ? cryptoList : cryptoList.slice(lastIndex + 1);
 
+    let paginatedData = [];
     if (newCryptoList.length === 0) {
       console.log('No new entries to update.');
-      return res.json({ success: true, message: 'No new entries to update' });
+      paginatedData = await getPaginatedData(req);
+    } else {
+      await Crypto.insertMany(newCryptoList);
+      console.log('Crypto data updated successfully.');
+      paginatedData = paginateData(newCryptoList, req);
     }
 
-    await Crypto.insertMany(newCryptoList);
-    console.log('Crypto data updated successfully.');
-      return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList: newCryptoList });
+    return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList: paginatedData });
     } catch (error: any) {
       console.error('Error updating crypto data:', error);
     }
   };
   
+  async function getPaginatedData(req: any) {
+    const allData = await Crypto.find();
+    return paginateData(allData, req);
+  }
+  
+  function paginateData(data: any[], req: any) {
+    const page = parseInt(req.query.page) || 1;
+    const perPage = 500;
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    return data.slice(startIndex, endIndex);
+  }
+
   setInterval(updateCryptoData, 3600000);
 
 export async function cryptoPrice( req: typeof cryptoPriceSchema, res: any){
