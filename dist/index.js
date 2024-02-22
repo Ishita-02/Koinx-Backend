@@ -18,6 +18,9 @@ mongoose_1.default.connect(mongoURI, {}).then(() => {
 }).catch((err) => {
     console.log(err);
 });
+app.get('/', (req, res) => {
+    res.send('Server is running successfully.');
+});
 app.use(index_1.default);
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

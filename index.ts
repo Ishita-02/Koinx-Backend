@@ -19,6 +19,10 @@ mongoose.connect(mongoURI!, {
         console.log(err)
 })
 
+app.get('/', (req: any, res: any) => {
+    res.send('Server is running successfully.')
+})
+
 app.use(userRoutes)
 
 app.listen(PORT, () => {

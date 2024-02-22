@@ -20,12 +20,22 @@ const typebox_1 = require("@sinclair/typebox");
 function updateCryptoData(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            const lastEntry = yield models_1.default.findOne().sort({ _id: -1 }).limit(1);
+            let startId = '';
+            if (lastEntry) {
+                startId = lastEntry.id;
+            }
             const response = yield axios_1.default.get('https://api.coingecko.com/api/v3/coins/list?include_platform=false');
             const cryptoList = response.data;
-            yield models_1.default.deleteMany({});
-            yield models_1.default.insertMany(cryptoList);
+            const lastIndex = cryptoList.findIndex((crypto) => crypto.id === startId);
+            const newCryptoList = lastIndex === -1 ? cryptoList : cryptoList.slice(lastIndex + 1);
+            if (newCryptoList.length === 0) {
+                console.log('No new entries to update.');
+                return res.json({ success: true, message: 'No new entries to update' });
+            }
+            yield models_1.default.insertMany(newCryptoList);
             console.log('Crypto data updated successfully.');
-            return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList });
+            return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList: newCryptoList });
         }
         catch (error) {
             console.error('Error updating crypto data:', error);

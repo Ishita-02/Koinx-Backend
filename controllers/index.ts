@@ -5,12 +5,28 @@ import {Type as T} from '@sinclair/typebox'
 
 export async function updateCryptoData(req:any, res: any) {
     try {
-      const response = await axios.get('https://api.coingecko.com/api/v3/coins/list?include_platform=false');
-      const cryptoList = response.data;
-      await Crypto.deleteMany({});
-      await Crypto.insertMany(cryptoList);
-      console.log('Crypto data updated successfully.');
-      return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList });
+      const lastEntry = await Crypto.findOne().sort({ _id: -1 }).limit(1);
+
+    let startId = ''; 
+    if (lastEntry) {
+      startId = lastEntry.id;
+    }
+
+    const response = await axios.get('https://api.coingecko.com/api/v3/coins/list?include_platform=false');
+    const cryptoList = response.data;
+
+    const lastIndex = cryptoList.findIndex((crypto: { id: string; }) => crypto.id === startId);
+
+    const newCryptoList = lastIndex === -1 ? cryptoList : cryptoList.slice(lastIndex + 1);
+
+    if (newCryptoList.length === 0) {
+      console.log('No new entries to update.');
+      return res.json({ success: true, message: 'No new entries to update' });
+    }
+
+    await Crypto.insertMany(newCryptoList);
+    console.log('Crypto data updated successfully.');
+      return res.json({ success: true, message: 'Crypto data updated successfully', cryptoList: newCryptoList });
     } catch (error: any) {
       console.error('Error updating crypto data:', error);
     }
