@@ -9,7 +9,7 @@ export async function updateCryptoData(req:any, res: any) {
       await Crypto.deleteMany({});
       await Crypto.insertMany(cryptoList);
       console.log('Crypto data updated successfully.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating crypto data:', error);
     }
   };
@@ -33,7 +33,7 @@ export async function cryptoPrice( req: typeof cryptoPriceSchema, res: any){
     const rate = fromCurrencyPrice / toCurrencyPrice;
 
     return res.json({ rate });
-  } catch (error) {
+  } catch (error: any) {
     if (axios.isAxiosError(error) && error.response && error.response.status === 404) {
       return res.status(404).json({ error: 'Currency not found on Coingecko' });
     }
@@ -45,13 +45,8 @@ export async function cryptoPrice( req: typeof cryptoPriceSchema, res: any){
 const cryptoPriceSchema = T.Object({
   fromCurrency: T.String(),
   toCurrency: T.String(),
-  date: T.String()
+  date: T.Date()
 });
-
-const formatDate = (date: string) => {
-  const [day, month, year] = date.split('-');
-  return `${day}-${month}-${year}`;
-};
 
 export async function companiesHoldingCrypto(req: typeof companiesSchema, res: any) {
   try {
@@ -66,7 +61,7 @@ export async function companiesHoldingCrypto(req: typeof companiesSchema, res: a
     const companies = response.data;
     
     return res.json({ companies });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching companies holding cryptocurrency:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }

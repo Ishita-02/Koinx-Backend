@@ -60,12 +60,8 @@ exports.cryptoPrice = cryptoPrice;
 const cryptoPriceSchema = typebox_1.Type.Object({
     fromCurrency: typebox_1.Type.String(),
     toCurrency: typebox_1.Type.String(),
-    date: typebox_1.Type.String()
+    date: typebox_1.Type.Date()
 });
-const formatDate = (date) => {
-    const [day, month, year] = date.split('-');
-    return `${day}-${month}-${year}`;
-};
 function companiesHoldingCrypto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
