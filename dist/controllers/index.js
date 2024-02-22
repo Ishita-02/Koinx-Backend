@@ -37,18 +37,20 @@ function cryptoPrice(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const { fromCurrency, toCurrency, date } = req.body;
-            // Format date as required by Coingecko API (DD-MM-YYYY)
-            const formattedDate = formatDate(date);
-            // Fetch historical price data from Coingecko API
-            const response = yield axios_1.default.get(`https://api.coingecko.com/api/v3/coins/${fromCurrency}/history?date=${formattedDate}`);
-            // Extract the price of the "toCurrency" from the response
-            const price = response.data.market_data.current_price[toCurrency.toLowerCase()];
-            if (!price) {
-                return res.status(404).json({ error: 'Currency pair not found' });
+            if (!fromCurrency || !toCurrency || !date) {
+                return res.status(400).json({ error: 'Missing required parameters' });
             }
-            return res.json({ price });
+            const fromCurrencyPriceResponse = yield axios_1.default.get(`https://api.coingecko.com/api/v3/coins/${fromCurrency}/history?date=${date}`);
+            const fromCurrencyPrice = fromCurrencyPriceResponse.data.market_data.current_price.usd;
+            const toCurrencyPriceResponse = yield axios_1.default.get(`https://api.coingecko.com/api/v3/coins/${toCurrency}/history?date=${date}`);
+            const toCurrencyPrice = toCurrencyPriceResponse.data.market_data.current_price.usd;
+            const rate = fromCurrencyPrice / toCurrencyPrice;
+            return res.json({ rate });
         }
         catch (error) {
+            if (axios_1.default.isAxiosError(error) && error.response && error.response.status === 404) {
+                return res.status(404).json({ error: 'Currency not found on Coingecko' });
+            }
             console.error('Error fetching crypto price:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -67,17 +69,12 @@ const formatDate = (date) => {
 function companiesHoldingCrypto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // Extract the cryptocurrency parameter from the request query
             const { currency } = req.body;
-            // Check if the cryptocurrency parameter is provided
             if (!currency) {
                 return res.status(400).json({ error: 'Invalid or missing currency parameter. Possible values are "bitcoin" or "ethereum".' });
             }
-            // Make a GET request to Coingecko API to fetch companies holding the cryptocurrency
             const response = yield axios_1.default.get(`https://api.coingecko.com/api/v3/companies/public_treasury/${currency}`);
-            // Extract the list of companies from the response
             const companies = response.data;
-            // Return the list of companies in the API response
             return res.json({ companies });
         }
         catch (error) {
